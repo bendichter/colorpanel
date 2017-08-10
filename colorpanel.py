@@ -5,40 +5,66 @@ import matplotlib
 from utils import use_subplot_spec
 
 
-def plot_clock(ax):
+def plot_colorwheel(cmap, ticks=(), N=256, vmin=None, vmax=None, offset=0,
+                    ax=None, color_start=0):
+    """
+
+    Parameters
+    ----------
+    cmap: matplotlib.color.Colormap or str
+    ticks: array-like
+        labels that are put evenly around the circle clockwise
+    N: int
+        number of
+    vmin
+    vmax
+    offset
+    ax
+    color_start: double
+
+    Returns
+    -------
+
+    """
+    if ax is None:
+        ax = plt.axes(polar=True)
+    data = np.linspace(0, 1, N+1)[np.newaxis, :]
+    theta = np.linspace(0, 2 * np.pi, N+1) + color_start
     ax.set_yticklabels([])
     ax.set_theta_zero_location('N')
     ax.set_theta_direction(-1)
-    ax.set_xticks([0, np.pi/2, np.pi, np.pi * 3/2])
-    ax.set_xticklabels([12, 3, 6, 9])
+    ax.set_xticks(np.linspace(0, 2*np.pi, len(ticks), endpoint=False))
+    ax.set_xticklabels(ticks)
+    ax.pcolor(theta, [0, 1], data + offset, cmap=cmap, vmin=vmin, vmax=vmax)
     return ax
 
 
-def plot_clocks(cmap='day/night', subplot_spec=None, fig=None, N=256):
+def plot_clocks(cmap='day/night', subplot_spec=None, fig=None):
 
     if fig is None:
         fig = plt.gcf()
 
     gs = use_subplot_spec(1, 2, subplot_spec=subplot_spec, fig=fig,
                           gs_out=True)
-
-    data = np.linspace(0, 1, N)[np.newaxis, :]
-    theta = np.linspace(0, 2 * np.pi, N)
-
     axs = []
-    ax = fig.add_subplot(gs[0], polar=True)
-    ax.pcolormesh(theta, [0, 1], data, cmap=cmap, vmin=0, vmax=2)
-    ax = plot_clock(ax)
-    ax.set_title('AM')
-    axs.append(ax)
-
-    ax = fig.add_subplot(122, polar=True)
-    ax.pcolormesh(theta, [0, 1], data + 1, cmap=cmap, vmin=0, vmax=2)
-    ax = plot_clock(ax)
-    ax.set_title('PM')
-    axs.append(ax)
+    for am_pm, sps, offset in zip(('AM', 'PM'), gs, (0, 1)):
+        ax = fig.add_subplot(sps, polar=True)
+        ax = plot_colorwheel(cmap, [12, 3, 6, 9], offset=offset, ax=ax,
+                             vmin=0, vmax=2)
+        ax.set_title(am_pm)
+        axs.append(ax)
 
     return fig
+
+
+def plot_months():
+    months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
+              'Sep', 'Oct', 'Nov', 'Dec')
+    ax = plot_colorwheel('seasons', ticks=months, N=12,
+                         color_start=-1 / 25 * 2 * np.pi)
+    ax.spines['polar'].set_visible(False)
+
+    return ax
 
 
 def init():
@@ -303,6 +329,7 @@ def init():
     cmap = matplotlib.colors.ListedColormap(colors)
     plt.cm.register_cmap('day/night', cmap)
 
-
+    cmap = matplotlib.colors.ListedColormap(np.flipud(colors))
+    plt.cm.register_cmap('seasons', cmap)
 
 init()
